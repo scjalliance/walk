@@ -57,6 +57,10 @@ func NewMainWindowWithName(name string) (*MainWindow, error) {
 
 	var err error
 
+	if mw.toolTip, err = NewToolTip(); err != nil {
+		return nil, err
+	}
+
 	if mw.menu, err = newMenuBar(mw); err != nil {
 		return nil, err
 	}

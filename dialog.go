@@ -78,6 +78,14 @@ func newDialogWithStyle(owner Form, style uint32) (*Dialog, error) {
 		}
 	}()
 
+	var err error
+
+	if owner == nil {
+		if dlg.toolTip, err = NewToolTip(); err != nil {
+			return nil, err
+		}
+	}
+
 	dlg.centerInOwnerWhenRun = owner != nil
 
 	dlg.result = DlgCmdNone

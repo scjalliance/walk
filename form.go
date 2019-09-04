@@ -109,6 +109,7 @@ type FormBase struct {
 	clientComposite             *Composite
 	owner                       Form
 	stopwatch                   *stopwatch
+	toolTip                     *ToolTip
 	inProgressEventCount        int
 	performLayout               chan ContainerLayoutItem
 	layoutResults               chan []LayoutResult
@@ -198,6 +199,11 @@ func (fb *FormBase) init(form Form) error {
 func (fb *FormBase) Dispose() {
 	if fb.hWnd != 0 {
 		fb.quitLayoutPerformer <- struct{}{}
+	}
+
+	if fb.toolTip != nil {
+		fb.toolTip.Dispose()
+		fb.toolTip = nil
 	}
 
 	fb.WindowBase.Dispose()

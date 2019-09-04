@@ -794,7 +794,9 @@ func (wb *WindowBase) Dispose() {
 		switch w := wb.window.(type) {
 		case *ToolTip:
 		case Widget:
-			globalToolTip.RemoveTool(w)
+			if tt := w.AsWidgetBase().toolTip(); tt != nil {
+				tt.RemoveTool(w)
+			}
 		}
 
 		wb.hWnd = 0

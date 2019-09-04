@@ -7,6 +7,8 @@
 package walk
 
 import (
+	"errors"
+
 	"github.com/lxn/win"
 )
 
@@ -130,8 +132,10 @@ func InitWidget(widget Widget, parent Window, className string, style, exStyle u
 func (wb *WidgetBase) init(widget Widget) error {
 	wb.graphicsEffects = newWidgetGraphicsEffectList(wb)
 
-	if err := globalToolTip.AddTool(wb.window.(Widget)); err != nil {
-		return err
+	if tt := wb.toolTip(); tt != nil {
+		if err := tt.AddTool(wb.window.(Widget)); err != nil {
+			return err
+		}
 	}
 
 	wb.toolTipTextProperty = NewProperty(
@@ -154,11 +158,13 @@ func (wb *WidgetBase) Dispose() {
 		return
 	}
 
+	if tt := wb.toolTip(); tt != nil {
+		tt.RemoveTool(wb.window.(Widget))
+	}
+
 	if wb.parent != nil && win.GetParent(wb.hWnd) == wb.parent.Handle() {
 		wb.SetParent(nil)
 	}
-
-	globalToolTip.RemoveTool(wb.window.(Widget))
 
 	wb.WindowBase.Dispose()
 }
@@ -389,17 +395,45 @@ func (wb *WidgetBase) ForEachAncestor(f func(window Window) bool) {
 
 // ToolTipText returns the tool tip text of the WidgetBase.
 func (wb *WidgetBase) ToolTipText() string {
-	return globalToolTip.Text(wb.window.(Widget))
+	tt := wb.toolTip()
+	if tt == nil {
+		return ""
+	}
+	return tt.Text(wb.window.(Widget))
 }
 
 // SetToolTipText sets the tool tip text of the WidgetBase.
 func (wb *WidgetBase) SetToolTipText(s string) error {
-	if err := globalToolTip.SetText(wb.window.(Widget), s); err != nil {
+	tt := wb.toolTip()
+	if tt == nil {
+		return errors.New("unable to set tool tip text: the widget's parent does not have an associated tool tip control")
+	}
+
+	if err := tt.SetText(wb.window.(Widget), s); err != nil {
 		return err
 	}
 
 	wb.toolTipTextChangedPublisher.Publish()
 
+	return nil
+}
+
+// toolTip returns the tool tip control of the widget's parent window.
+// It returns nil if the tool tip control has not been prepared.
+func (wb *WidgetBase) toolTip() *ToolTip {
+	parent := wb.parent
+	for parent != nil {
+		if form, ok := parent.(Form); ok {
+			if tt := form.AsFormBase().toolTip; tt != nil {
+				return tt
+			}
+		}
+		widget, ok := parent.(Widget)
+		if !ok {
+			return nil
+		}
+		parent = widget.AsWidgetBase().parent
+	}
 	return nil
 }
 
